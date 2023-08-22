@@ -11,7 +11,7 @@ uint64_t get_cas_id(void);
 void set_cas_id(uint64_t new_cas);
 
 /*@null@*/
-item *do_item_alloc(const char *key, const size_t nkey, const unsigned int flags, const rel_time_t exptime, const int nbytes);
+item *do_item_alloc(const char *key, const size_t nkey, const uint64_t flags, const rel_time_t exptime, const int nbytes);
 item_chunk *do_item_alloc_chunk(item_chunk *ch, const size_t bytes_remain);
 item *do_item_alloc_pull(const size_t ntotal, const unsigned int id);
 void item_free(item *it);
