@@ -247,7 +247,7 @@ int storage_get_item(conn *c, item *it, mc_resp *resp) {
     bool chunked = false;
     if (ntotal > settings.slab_chunk_size_max) {
         // Pull a chunked item header.
-        uint32_t flags;
+        uint64_t flags;
         FLAGS_CONV(it, flags);
         new_it = item_alloc(ITEM_key(it), it->nkey, flags, it->exptime, it->nbytes);
         assert(new_it == NULL || (new_it->it_flags & ITEM_CHUNKED));
@@ -491,7 +491,7 @@ static int storage_write(void *storage, const int clsid, const int item_age) {
     item *it = it_info.it;
     /* First, storage for the header object */
     size_t orig_ntotal = ITEM_ntotal(it);
-    uint32_t flags;
+    uint64_t flags;
     if ((it->it_flags & ITEM_HDR) == 0 &&
             (item_age == 0 || current_time - it->time > item_age)) {
         FLAGS_CONV(it, flags);

@@ -131,12 +131,12 @@
          + (((item)->it_flags & ITEM_CAS) ? sizeof(uint64_t) : 0))
 
 #define ITEM_data(item) ((char*) &((item)->data) + (item)->nkey + 1 \
-         + (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint32_t) : 0) \
+         + (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint64_t) : 0) \
          + (((item)->it_flags & ITEM_CAS) ? sizeof(uint64_t) : 0))
 
 #define ITEM_ntotal(item) (sizeof(struct _stritem) + (item)->nkey + 1 \
          + (item)->nbytes \
-         + (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint32_t) : 0) \
+         + (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint64_t) : 0) \
          + (((item)->it_flags & ITEM_CAS) ? sizeof(uint64_t) : 0))
 
 #define ITEM_clsid(item) ((item)->slabs_clsid & ~(3<<6))
@@ -163,13 +163,13 @@
 /** Item client flag conversion */
 #define FLAGS_CONV(it, flag) { \
     if ((it)->it_flags & ITEM_CFLAGS) { \
-        flag = *((uint32_t *)ITEM_suffix((it))); \
+        flag = *((uint64_t *)ITEM_suffix((it))); \
     } else { \
         flag = 0; \
     } \
 }
 
-#define FLAGS_SIZE(item) (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint32_t) : 0)
+#define FLAGS_SIZE(item) (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint64_t) : 0)
 
 /**
  * Callback for any function producing stats.
@@ -639,7 +639,7 @@ typedef struct _strchunk {
 #ifdef NEED_ALIGN
 static inline char *ITEM_schunk(item *it) {
     int offset = it->nkey + 1
-        + ((it->it_flags & ITEM_CFLAGS) ? sizeof(uint32_t) : 0)
+        + ((it->it_flags & ITEM_CFLAGS) ? sizeof(uint64_t) : 0)
         + ((it->it_flags & ITEM_CAS) ? sizeof(uint64_t) : 0);
     int remain = offset % 8;
     if (remain != 0) {
@@ -649,7 +649,7 @@ static inline char *ITEM_schunk(item *it) {
 }
 #else
 #define ITEM_schunk(item) ((char*) &((item)->data) + (item)->nkey + 1 \
-         + (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint32_t) : 0) \
+         + (((item)->it_flags & ITEM_CFLAGS) ? sizeof(uint64_t) : 0) \
          + (((item)->it_flags & ITEM_CAS) ? sizeof(uint64_t) : 0))
 #endif
 
@@ -968,7 +968,7 @@ enum delta_result_type add_delta(LIBEVENT_THREAD *t, const char *key,
 void accept_new_conns(const bool do_accept);
 void  conn_close_idle(conn *c);
 void  conn_close_all(void);
-item *item_alloc(const char *key, size_t nkey, int flags, rel_time_t exptime, int nbytes);
+item *item_alloc(const char *key, size_t nkey, uint64_t flags, rel_time_t exptime, int nbytes);
 #define DO_UPDATE true
 #define DONT_UPDATE false
 item *item_get(const char *key, const size_t nkey, LIBEVENT_THREAD *t, const bool do_update);

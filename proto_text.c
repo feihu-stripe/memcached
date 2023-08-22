@@ -529,7 +529,7 @@ static inline int make_ascii_get_suffix(char *suffix, item *it, bool return_cas,
         *p = '0';
         p++;
     } else {
-        p = itoa_u32(*((uint32_t *) ITEM_suffix(it)), p);
+        p = itoa_u64(*((uint64_t *) ITEM_suffix(it)), p);
     }
     *p = ' ';
     p = itoa_u32(nbytes-2, p+1);
@@ -917,7 +917,7 @@ struct _meta_flags {
     rel_time_t exptime;
     rel_time_t autoviv_exptime;
     rel_time_t recache_time;
-    uint32_t client_flags;
+    uint64_t client_flags;
     uint64_t req_cas_id;
     uint64_t delta; // ma
     uint64_t initial; // ma
@@ -1012,7 +1012,7 @@ static int _meta_flag_preparse(token_t *tokens, const size_t start,
                 break;
             // mset-related.
             case 'F':
-                if (!safe_strtoul(tokens[i].value+1, &of->client_flags)) {
+                if (!safe_strtoull(tokens[i].value+1, &of->client_flags)) {
                     of->has_error = true;
                 }
                 break;
@@ -1196,7 +1196,7 @@ static void process_mget_command(conn *c, token_t *tokens, const size_t ntokens)
                         *p = '0';
                         p++;
                     } else {
-                        p = itoa_u32(*((uint32_t *) ITEM_suffix(it)), p);
+                        p = itoa_u64(*((uint64_t *) ITEM_suffix(it)), p);
                     }
                     break;
                 case 'l':
