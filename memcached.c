@@ -4790,7 +4790,7 @@ int main (int argc, char **argv) {
     int c;
     bool lock_memory = false;
     bool do_daemonize = false;
-    bool preallocate = false;
+    bool preallocate = true;
     int maxcore = 0;
     char *username = NULL;
     char *pid_file = NULL;
