@@ -176,15 +176,15 @@ static void _cleanup_backend(mcp_backend_t *be) {
         // remove any pending events.
         if (!be->tunables.down) {
             int pending = event_pending(&bec->main_event, EV_READ|EV_WRITE|EV_TIMEOUT, NULL);
-            if ((pending & (EV_READ|EV_WRITE|EV_TIMEOUT)) != 0) {
+            if (pending != 0) {
                 event_del(&bec->main_event); // an error to call event_del() without event.
             }
             pending = event_pending(&bec->write_event, EV_READ|EV_WRITE|EV_TIMEOUT, NULL);
-            if ((pending & (EV_READ|EV_WRITE|EV_TIMEOUT)) != 0) {
+            if (pending != 0) {
                 event_del(&bec->write_event); // an error to call event_del() without event.
             }
             pending = event_pending(&bec->timeout_event, EV_TIMEOUT, NULL);
-            if ((pending & (EV_TIMEOUT)) != 0) {
+            if (pending != 0) {
                 event_del(&bec->timeout_event); // an error to call event_del() without event.
             }
 
@@ -402,8 +402,8 @@ void *proxy_event_thread(void *arg) {
 }
 
 static void _set_main_event(struct mcp_backendconn_s *be, struct event_base *base, int flags, struct timeval *t, event_callback_fn callback) {
-    int pending = event_pending(&be->main_event, EV_READ|EV_WRITE, NULL);
-    if ((pending & (EV_READ|EV_WRITE)) != 0) {
+    int pending = event_pending(&be->main_event, EV_READ|EV_WRITE|EV_TIMEOUT, NULL);
+    if (pending != 0) {
         event_del(&be->main_event); // replace existing event.
     }
 
@@ -413,16 +413,12 @@ static void _set_main_event(struct mcp_backendconn_s *be, struct event_base *bas
 }
 
 static void _stop_main_event(struct mcp_backendconn_s *be) {
-    int pending = event_pending(&be->main_event, EV_READ|EV_WRITE, NULL);
-    if ((pending & (EV_READ|EV_WRITE|EV_TIMEOUT)) == 0) {
-        return;
-    }
-    event_del(&be->write_event);
+    event_del(&be->main_event);
 }
 
 static void _start_write_event(struct mcp_backendconn_s *be) {
-    int pending = event_pending(&be->main_event, EV_WRITE, NULL);
-    if ((pending & (EV_WRITE|EV_TIMEOUT)) != 0) {
+    int pending = event_pending(&be->write_event, EV_WRITE|EV_TIMEOUT, NULL);
+    if (pending != 0) {
         return;
     }
     // FIXME: wasn't there a write timeout?
@@ -430,10 +426,6 @@ static void _start_write_event(struct mcp_backendconn_s *be) {
 }
 
 static void _stop_write_event(struct mcp_backendconn_s *be) {
-    int pending = event_pending(&be->main_event, EV_WRITE, NULL);
-    if ((pending & (EV_WRITE|EV_TIMEOUT)) == 0) {
-        return;
-    }
     event_del(&be->write_event);
 }
 
@@ -441,7 +433,7 @@ static void _stop_write_event(struct mcp_backendconn_s *be) {
 // persistent listener (optimization + catch disconnects faster)
 static void _start_timeout_event(struct mcp_backendconn_s *be) {
     int pending = event_pending(&be->timeout_event, EV_TIMEOUT, NULL);
-    if ((pending & (EV_TIMEOUT)) != 0) {
+    if (pending != 0) {
         return;
     }
     event_add(&be->timeout_event, &be->tunables.read);
@@ -449,7 +441,7 @@ static void _start_timeout_event(struct mcp_backendconn_s *be) {
 
 static void _stop_timeout_event(struct mcp_backendconn_s *be) {
     int pending = event_pending(&be->timeout_event, EV_TIMEOUT, NULL);
-    if ((pending & (EV_TIMEOUT)) == 0) {
+    if (pending == 0) {
         return;
     }
     event_del(&be->timeout_event);
@@ -1299,8 +1291,7 @@ static void proxy_beconn_handler(const int fd, const short which, void *arg) {
             _reset_bad_backend(be, P_BE_FAIL_WRITING);
             return;
         }
-        // FIXME: flags isn't being set anywhere.
-        if (flags & EV_WRITE) {
+        if (res & EV_WRITE) {
             _start_write_event(be);
         }
         if (be->pending_read) {
@@ -1404,7 +1395,13 @@ static void proxy_backend_handler(const int fd, const short which, void *arg) {
         }
         if (res & EV_WRITE) {
             _start_write_event(be);
+        } else if (be->can_write == false) {
+            fprintf(stderr, "ERROR: CAN'T WRITE AND DID NOT START WRITE EVENT\n");
         }
+    }
+
+    if (be->can_write == false && event_pending(&be->write_event, EV_WRITE|EV_TIMEOUT, NULL) == 0) {
+        fprintf(stderr, "WARNING: CAN'T WRITE BUT NO WRITE EVENT [%d] connecting[%d]\n", which, be->connecting);
     }
 
     if (which & EV_READ) {
