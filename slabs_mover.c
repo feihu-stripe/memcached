@@ -252,7 +252,6 @@ struct _locked_st {
     void *hold_lock; // held lock from trylock.
     uint32_t hv;
     unsigned int s_clsid;
-    unsigned int d_clsid;
 };
 
 // called while slabs lock is held so we can safely inspect a chunk of memory
@@ -439,7 +438,6 @@ static int slab_rebalance_move(struct slab_rebal_thread *t) {
         item *it;
         cbarg.it = it = t->rebal.slab_pos;
         cbarg.s_clsid = t->rebal.s_clsid;
-        cbarg.d_clsid = t->rebal.d_clsid;
         // it is returned _locked_ if successful. _must_ unlock it!
         int status = slabs_locked_callback(_slabs_locked_cb, &cbarg);
 
